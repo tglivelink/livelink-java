@@ -1,4 +1,4 @@
-package com.tencent.livelink.demo.mode;
+package com.tencent.livelink.demo.model;
 
 import lombok.Builder;
 import lombok.Data;

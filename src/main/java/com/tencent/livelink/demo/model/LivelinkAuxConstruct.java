@@ -1,4 +1,4 @@
-package com.tencent.livelink.demo.mode;
+package com.tencent.livelink.demo.model;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.tencent.livelink.demo.util.JsonUtil;

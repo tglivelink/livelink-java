@@ -6,9 +6,9 @@ import static com.tencent.livelink.demo.constant.CommonConstant.LIVELINK_TEST_UR
 import com.tencent.livelink.demo.constant.CommonConstant;
 import com.tencent.livelink.demo.encrypt.AESPlain;
 import com.tencent.livelink.demo.encrypt.MD5Util;
-import com.tencent.livelink.demo.mode.LivelinkAuxConstruct;
-import com.tencent.livelink.demo.mode.LivelinkCallFlow;
-import com.tencent.livelink.demo.mode.LivelinkKeyInfos;
+import com.tencent.livelink.demo.model.LivelinkAuxConstruct;
+import com.tencent.livelink.demo.model.LivelinkCallFlow;
+import com.tencent.livelink.demo.model.LivelinkKeyInfos;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;

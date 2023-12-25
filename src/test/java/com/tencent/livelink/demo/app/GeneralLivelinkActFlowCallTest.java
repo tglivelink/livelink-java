@@ -2,8 +2,8 @@ package com.tencent.livelink.demo.app;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.tencent.livelink.demo.mode.LivelinkCallFlow;
-import com.tencent.livelink.demo.mode.LivelinkKeyInfos;
+import com.tencent.livelink.demo.model.LivelinkCallFlow;
+import com.tencent.livelink.demo.model.LivelinkKeyInfos;
 import com.tencent.livelink.demo.util.JsonUtil;
 import com.tencent.livelink.demo.util.LivelinkUtil;
 import org.junit.jupiter.api.Test;
