@@ -3,6 +3,7 @@ package com.tencent.livelink.demo.util;
 import static com.tencent.livelink.demo.constant.CommonConstant.LIVELINK_PROD_URL;
 import static com.tencent.livelink.demo.constant.CommonConstant.LIVELINK_TEST_URL;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.tencent.livelink.demo.constant.CommonConstant;
 import com.tencent.livelink.demo.encrypt.AESPlain;
 import com.tencent.livelink.demo.encrypt.MD5Util;
@@ -66,6 +67,7 @@ public class LivelinkUtil {
 
         Map<String, Object> tmp = new HashMap<>();
         tmp.put("livePlatId", livelinkKeyInfos.getAppId());
+        tmp.put("actId", livelinkCallFlow.getActId());
         tmp.put("gameId", livelinkCallFlow.getGameId());
         tmp.put("v", livelinkCallFlow.getVersion());
         tmp.put("t", tm);
@@ -184,15 +186,15 @@ public class LivelinkUtil {
                 tm
         );
 
-        log.info("livelink call url: {}", url);
-
         LivelinkAuxConstruct livelinkAuxConstruct = new LivelinkAuxConstruct(livelinkCallFlow);
+        JSONObject bodyJson = livelinkAuxConstruct.genBodyJson();
+        log.info("livelink call url: {}, body: {}", url, bodyJson);
 
         // 可以添加其他可选参数
         // livelinkAuxConstruct.addBodyParam("isAnchor", 0);
         return HttpUtil.sendPost(
                 url,
-                livelinkAuxConstruct.genBodyJson(),
+                bodyJson,
                 new HashMap<>(),
                 3000,
                 5000
@@ -232,6 +234,8 @@ public class LivelinkUtil {
                 .append(livelinkCallFlow.getApiName())
                 .append("&livePlatId=")
                 .append(livelinkKeyInfos.getAppId())
+                .append("&actId=")
+                .append(livelinkCallFlow.getActId())
                 .append("&gameId=")
                 .append(livelinkCallFlow.getGameId())
                 .append("&v=")
