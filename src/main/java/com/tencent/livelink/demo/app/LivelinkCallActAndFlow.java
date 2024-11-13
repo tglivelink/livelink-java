@@ -21,7 +21,7 @@ public class LivelinkCallActAndFlow {
                 .gameId("yxzj")
                 .apiName("GetBindInfo")
                 .flowId("d9a497e8")
-                .userId("123456")
+                .userId("1234567")
                 .build();
 
         // 生成和发起请求
