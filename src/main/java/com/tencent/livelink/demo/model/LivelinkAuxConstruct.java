@@ -6,36 +6,32 @@ import java.util.HashMap;
 
 // Livelink的辅助构造，用于生成请求的body，或者生成code
 public class LivelinkAuxConstruct {
-
-    private LivelinkCallFlow livelinkCallFlow;
-    private HashMap<String, Object> flowIdMap = new HashMap<>();
+    private HashMap<String, Object> bodyMap;
     private HashMap<String, Object> codeMap = new HashMap<>();
 
-    public LivelinkAuxConstruct(LivelinkCallFlow livelinkCallFlow) {
-        this.livelinkCallFlow = livelinkCallFlow;
-        flowIdMap.put(
-                "flowId",
-                livelinkCallFlow.getFlowId()
-        );
+    public LivelinkAuxConstruct(LivelinkUserInfos livelinkUserInfos, HashMap<String, Object> bodyParams) {
+        bodyMap = bodyParams;
         codeMap.put(
                 "userid",
-                livelinkCallFlow.getUserId()
+                livelinkUserInfos.getUserID()
         );
+        if (livelinkUserInfos.getIsAnchor() != null && !livelinkUserInfos.getIsAnchor().equals("")) {
+            codeMap.put(
+                    "isAnchor",
+                    livelinkUserInfos.getIsAnchor()
+            );
+        }
+        if (livelinkUserInfos.getClientIP() != null && !livelinkUserInfos.getClientIP().equals("")) {
+            codeMap.put(
+                    "clientIP",
+                    livelinkUserInfos.getClientIP()
+            );
+        }
     }
-
-
-    public void addBodyParam(String key, Object value) {
-        this.flowIdMap.put(key, value);
-    }
-
 
     public JSONObject genBodyJson() {
-        String jsonStr = JsonUtil.objectToJsonString(flowIdMap);
+        String jsonStr = JsonUtil.objectToJsonString(bodyMap);
         return JsonUtil.parseJSONObject(jsonStr);
-    }
-
-    public void addCodeParam(String key, Object value) {
-        this.codeMap.put(key, value);
     }
 
     public String genCodeJson() {

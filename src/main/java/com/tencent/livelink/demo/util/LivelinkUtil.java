@@ -8,7 +8,6 @@ import com.tencent.livelink.demo.constant.CommonConstant;
 import com.tencent.livelink.demo.encrypt.AESPlain;
 import com.tencent.livelink.demo.encrypt.MD5Util;
 import com.tencent.livelink.demo.model.LivelinkAuxConstruct;
-import com.tencent.livelink.demo.model.LivelinkCallFlow;
 import com.tencent.livelink.demo.model.LivelinkKeyInfos;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -18,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
+
+import com.tencent.livelink.demo.model.LivelinkUserInfos;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
@@ -28,18 +29,18 @@ public class LivelinkUtil {
      * 生成校验的code
      *
      * @param livelinkKeyInfos livelink分配的基本key信息
-     * @param livelinkCallFlow livelink的基本调用信息
+     * @param livelinkUserInfos livelink的用户信息信息
+     * @param bodyParams 请求带的http body
      * @return 生成校验的code
      * @throws Exception 异常，注意异常处理
      */
     public static String genCode(
             LivelinkKeyInfos livelinkKeyInfos,
-            LivelinkCallFlow livelinkCallFlow
+            LivelinkUserInfos livelinkUserInfos,
+            HashMap<String, Object> bodyParams
     ) throws Exception {
 
-        LivelinkAuxConstruct livelinkAuxConstruct = new LivelinkAuxConstruct(livelinkCallFlow);
-        // 可以添加其他可选参数，如：
-        // livelinkAuxConstruct.addCodeParam("isAnchor", 0);
+        LivelinkAuxConstruct livelinkAuxConstruct = new LivelinkAuxConstruct(livelinkUserInfos, bodyParams);
         return AESPlain.encryptJson(
                 livelinkAuxConstruct.genCodeJson(),
                 livelinkKeyInfos.getSecKey()
@@ -50,7 +51,7 @@ public class LivelinkUtil {
      * sign生成
      *
      * @param livelinkKeyInfos livelink分配的基本key信息
-     * @param livelinkCallFlow livelink的基本调用信息
+     * @param queryParams url的query参数
      * @param code 加密后的游戏五元组的code
      * @param tm 秒级时间戳
      * @param nonce 随机8位数字字符串
@@ -59,7 +60,7 @@ public class LivelinkUtil {
      */
     public static String genSign(
             LivelinkKeyInfos livelinkKeyInfos,
-            LivelinkCallFlow livelinkCallFlow,
+            HashMap<String, Object> queryParams,
             String code,
             long tm,
             String nonce
@@ -67,12 +68,31 @@ public class LivelinkUtil {
 
         Map<String, Object> tmp = new HashMap<>();
         tmp.put("livePlatId", livelinkKeyInfos.getAppId());
-        tmp.put("actId", livelinkCallFlow.getActId());
-        tmp.put("gameId", livelinkCallFlow.getGameId());
-        tmp.put("v", livelinkCallFlow.getVersion());
         tmp.put("t", tm);
         tmp.put("nonce", nonce);
         tmp.put("code", URLEncoder.encode(code, "utf-8"));
+
+        // 不参能再增加的字段
+        Map<String, Object> blacklistFields= new HashMap<>();
+        blacklistFields.put("c", 0);
+        blacklistFields.put("apiName", 0);
+        blacklistFields.put("sig", 0);
+        blacklistFields.put("fromGame", 0);
+        blacklistFields.put("backUrl", 0);
+        blacklistFields.put("a", 0);
+        // 这几个字段上面已经添加不能重复加
+        blacklistFields.put("livePlatId", 0);
+        blacklistFields.put("t", 0);
+        blacklistFields.put("nonce", 0);
+        blacklistFields.put("code", 0);
+
+        // 然后加入用户传入的参数
+        for (Entry<String, Object> entry : queryParams.entrySet()) {
+            if (entry.getKey() == null || blacklistFields.containsKey(entry.getKey())) {
+                continue;
+            }
+            tmp.put(entry.getKey(), entry.getValue());
+        }
 
         tmp = sortMapByKey(tmp, false);
         List<Object> data = new ArrayList<>();
@@ -143,13 +163,17 @@ public class LivelinkUtil {
      * 生成接口调用
      *
      * @param livelinkKeyInfos livelink分配的基本key信息
-     * @param livelinkCallFlow livelink的基本调用信息
+     * @param livelinkUserInfos livelink的用户信息
+     * @param queryParams url的query参数
+     * @param bodyParams http请求的body参数
      * @param isTest 是否为测试
      * @throws Exception 异常，注意异常处理
      */
     public static String callActWithFlow (
             LivelinkKeyInfos livelinkKeyInfos,
-            LivelinkCallFlow livelinkCallFlow,
+            LivelinkUserInfos livelinkUserInfos,
+            HashMap<String, Object> queryParams,
+            HashMap<String, Object> bodyParams,
             boolean isTest
     ) throws Exception {
 
@@ -163,13 +187,14 @@ public class LivelinkUtil {
         // 生成code
         String code = genCode(
                 livelinkKeyInfos,
-                livelinkCallFlow
+                livelinkUserInfos,
+                bodyParams
         );
 
         // 生成sign
         String sign = genSign(
                 livelinkKeyInfos,
-                livelinkCallFlow,
+                queryParams,
                 code,
                 tm,
                 nonce
@@ -179,14 +204,14 @@ public class LivelinkUtil {
         String url = buildUrl(
                 isTest,
                 livelinkKeyInfos,
-                livelinkCallFlow,
+                queryParams,
                 nonce,
                 code,
                 sign,
                 tm
         );
 
-        LivelinkAuxConstruct livelinkAuxConstruct = new LivelinkAuxConstruct(livelinkCallFlow);
+        LivelinkAuxConstruct livelinkAuxConstruct = new LivelinkAuxConstruct(livelinkUserInfos, bodyParams);
         JSONObject bodyJson = livelinkAuxConstruct.genBodyJson();
         log.info("livelink call url: {}, body: {}", url, bodyJson);
 
@@ -207,7 +232,7 @@ public class LivelinkUtil {
      *
      * @param isTest 是否测试
      * @param livelinkKeyInfos livelink分配的基本key信息
-     * @param livelinkCallFlow livelink的基本调用信息
+     * @param queryParams url的query参数
      * @param nonce 盐值
      * @param code 用户code
      * @param sign 签名
@@ -218,29 +243,29 @@ public class LivelinkUtil {
     public static String buildUrl(
             boolean isTest,
             LivelinkKeyInfos livelinkKeyInfos,
-            LivelinkCallFlow livelinkCallFlow,
+            HashMap<String, Object> queryParams,
             String nonce,
             String code,
             String sign,
             long tm
     ) throws Exception {
-        StringBuilder builder = null;
+        StringBuilder builder;
         if (isTest) {
             builder = new StringBuilder(LIVELINK_TEST_URL);
         } else {
             builder = new StringBuilder(LIVELINK_PROD_URL);
         }
-        builder.append("apiName=")
-                .append(livelinkCallFlow.getApiName())
-                .append("&livePlatId=")
-                .append(livelinkKeyInfos.getAppId())
-                .append("&actId=")
-                .append(livelinkCallFlow.getActId())
-                .append("&gameId=")
-                .append(livelinkCallFlow.getGameId())
-                .append("&v=")
-                .append(livelinkCallFlow.getVersion())
-                .append("&t=")
+        builder.append("livePlatId=")
+                .append(livelinkKeyInfos.getAppId());
+
+        for (Entry<String, Object> entry : queryParams.entrySet()) {
+            builder.append("&")
+                    .append(entry.getKey())
+                    .append("=")
+                    .append(entry.getValue());
+        }
+
+        builder.append("&t=")
                 .append(tm)
                 .append("&nonce=")
                 .append(nonce)
